@@ -12,8 +12,21 @@ public class Jody {
         System.out.println(banner);
         System.out.println("    Hello! I'm Jody.");
         System.out.println("    What can I do for you?");
-        System.out.println("    ____________________________________________________________");
-        System.out.println("    Bye. Hope to see you again soon!");
-        System.out.println("    ____________________________________________________________");
+        System.out.println("    ____________________________________________________________\n");
+
+        while (true) {
+            Scanner input = new Scanner(System.in);
+            String cmd = input.nextLine();
+            if (!cmd.equalsIgnoreCase("bye")) {
+                System.out.println("    ____________________________________________________________");
+                System.out.println("    " + cmd);
+                System.out.println("    ____________________________________________________________\n");
+            } else {
+                System.out.println("    ____________________________________________________________");
+                System.out.println("    Bye. Hope to see you again soon!");
+                System.out.println("    ____________________________________________________________\n");
+                break;
+            }
+        }
     }
 }
