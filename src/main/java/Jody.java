@@ -1,102 +1,114 @@
 import java.util.Scanner;
 
 public class Jody {
+    private static final int MAX_TASKS = 100;
+    private static final String DIVIDER =
+            "    ____________________________________________________________";
+    private static final String BANNER = "     _           _       \n"
+            + "    | | ___   __| |_   _ \n"
+            + " _  | |/ _ \\ / _` | | | |\n"
+            + "| |_| | (_) | (_| | |_| |\n"
+            + " \\___/ \\___/ \\__,_|\\__, |\n"
+            + "                   |___/ \n";
 
-    public static final int MAX_TASKS = 100;
-    public static final String divider = "    ____________________________________________________________";
     public static void main(String[] args) {
-        String banner = "     _           _       \n"
-                + "    | | ___   __| |_   _ \n"
-                + " _  | |/ _ \\ / _` | | | |\n"
-                + "| |_| | (_) | (_| | |_| |\n"
-                + " \\___/ \\___/ \\__,_|\\__, |\n"
-                + "                   |___/ \n";
-        System.out.println(divider);
-        System.out.println(banner);
-        System.out.println("    Hello! I'm Jody.");
-        System.out.println("    What can I do for you?");
-        System.out.println(divider + "\n");
-
-        String[] taskList = new String[MAX_TASKS];
-        int taskCount = 0;
-        String[] taskState = new String[MAX_TASKS];
-
-        for (int i = 0; i < MAX_TASKS; i++) {
-            taskState[i] = "[ ]";
-        }
-
+        displayStartup();
+        Task[] taskList = new Task[MAX_TASKS];
         Scanner input = new Scanner(System.in);
-        while (true) {
-            String cmd = input.nextLine();
-            if (cmd.equalsIgnoreCase("list")) {
-                System.out.println(divider);
-                System.out.println("    Here are the tasks in your list:");
-                for (int i = 1; i <= taskCount; i++) {
-                    System.out.println("    " + i + "." + taskState[i - 1] + " " + taskList[i - 1]);
-                }
-                System.out.println(divider + "\n");
-            } else if (isMark(cmd, taskCount)) {
-                System.out.println(divider);
-                System.out.println("    Nice! I've marked this task as done:");
-                int num = Integer.parseInt(cmd.split(" ")[1]) - 1;
-                taskState[num] = "[X]";
-                System.out.println("      " + taskState[num] + " " + taskList[num]);
-                System.out.println(divider + "\n");
-            } else if (isUnmarked(cmd, taskCount)) {
-                System.out.println(divider);
-                System.out.println("    OK, I've marked this task as not done yet:");
-                int num = Integer.parseInt(cmd.split(" ")[1]) - 1;
-                taskState[num] = "[ ]";
-                System.out.println("      " + taskState[num] + " " + taskList[num]);
-                System.out.println(divider + "\n");
-            } else if (!cmd.equalsIgnoreCase("bye")) {
-                System.out.println(divider);
-                System.out.println("    added: " + cmd);
-                taskList[taskCount++] = cmd;
-                System.out.println(divider + "\n");
-            } else {
-                System.out.println(divider);
-                System.out.println("    Bye. Hope to see you again soon!");
-                System.out.println(divider + "\n");
+        runCommand(input, taskList);
+    }
+
+    private static void runCommand(Scanner input, Task[] taskList) {
+        int taskCount = 0;
+        while (input.hasNextLine()) {
+            String task = input.nextLine();
+            if (task.equalsIgnoreCase("bye")) {
+                displayShutdown();
                 break;
             }
+            taskCount = processTask(task, taskList, taskCount);
         }
     }
 
-    private static boolean isMark(String cmd, int cmdCount) {
-        String[] words = cmd.split(" ");
+    private static int processTask(String task, Task[] taskList, int taskCount) {
+        if (task.equalsIgnoreCase("list")) {
+            listTasks(taskList, taskCount);
+        } else if (task.toLowerCase().startsWith("mark ")) {
+            markTask(task, taskList, taskCount);
+        } else if (task.toLowerCase().startsWith("unmark ")) {
+            unmarkTask(task, taskList, taskCount);
+        } else {
+            return addTask(task, taskList, taskCount);
+        }
+        return taskCount;
+    }
+
+    private static int addTask(String task, Task[] taskList, int taskCount) {
+        taskList[taskCount] = new Task(task);
+        System.out.println(DIVIDER);
+        System.out.println("    added: " + task);
+        System.out.println(DIVIDER + "\n");
+        return taskCount + 1;
+    }
+
+    private static void listTasks(Task[] taskList, int taskCount) {
+        System.out.println(DIVIDER);
+        System.out.println("    Here are the tasks in your list:");
+        for (int i = 0; i < taskCount; i++) {
+            System.out.println("    " + (i + 1) + "." + taskList[i]);
+        }
+        System.out.println(DIVIDER + "\n");
+    }
+
+    private static void markTask(String task, Task[] taskList, int taskCount) {
+        System.out.println(DIVIDER);
+        int taskIndex = parseTaskNumber(task);
+        if (taskIndex >= 0 && taskIndex < taskCount) {
+            taskList[taskIndex].markAsDone();
+            System.out.println("    Nice! I've marked this task as done:");
+            System.out.println("      " + taskList[taskIndex]);
+        } else {
+            System.out.println("    Unable to mark task.");
+        }
+        System.out.println(DIVIDER + "\n");
+    }
+
+    private static void unmarkTask(String task, Task[] taskList, int taskCount) {
+        System.out.println(DIVIDER);
+        int taskIndex = parseTaskNumber(task);
+        if (taskIndex >= 0 && taskIndex < taskCount) {
+            taskList[taskIndex].markAsNotDone();
+            System.out.println("    OK, I've marked this task as not done yet:");
+            System.out.println("      " + taskList[taskIndex]);
+        } else {
+            System.out.println("    Unable to unmark task.");
+        }
+        System.out.println(DIVIDER + "\n");
+    }
+
+    private static int parseTaskNumber(String task) {
+        String[] words = task.split(" ");
         if (words.length != 2) {
-            return false;
-        } else if (words[0].equalsIgnoreCase("mark")) {
-            try {
-                int num = Integer.parseInt(words[1]);
-                return num <= cmdCount;
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        } else if (words[0].equalsIgnoreCase("unmark")) {
-            try {
-                int num = Integer.parseInt(words[1]);
-                return num <= cmdCount;
-            } catch (NumberFormatException e) {
-                return false;
-            }
+            return -1;
         }
-        return false;
+        try {
+            return Integer.parseInt(words[1]) - 1;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
-    private static boolean isUnmarked(String cmd, int cmdCount) {
-        String[] words = cmd.split(" ");
-        if  (words.length != 2) {
-            return false;
-        } else if (words[0].equalsIgnoreCase("unmark")) {
-            try {
-                int num = Integer.parseInt(words[1]);
-                return num <= cmdCount;
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        }
-        return false;
+    private static void displayStartup() {
+        System.out.println(DIVIDER);
+        System.out.print(BANNER);
+        System.out.println("    Hello! I'm Jody.");
+        System.out.println("    What can I do for you?");
+        System.out.println(DIVIDER + "\n");
+    }
+
+    private static void displayShutdown() {
+        System.out.println(DIVIDER);
+        System.out.println("    Bye. Hope to see you again soon!");
+        System.out.println(DIVIDER + "\n");
     }
 }
