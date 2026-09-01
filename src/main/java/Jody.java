@@ -11,6 +11,9 @@ public class Jody {
             + "| |_| | (_) | (_| | |_| |\n"
             + " \\___/ \\___/ \\__,_|\\__, |\n"
             + "                   |___/ \n";
+    public static final int TODO_LEN = 5;
+    public static final int DEADLINE_LEN = 9;
+    public static final int EVENT_LEN = 6;
 
     public static void main(String[] args) {
         displayStartup();
@@ -39,11 +42,11 @@ public class Jody {
         } else if (line.toLowerCase().startsWith("unmark ")) {
             unmarkTask(line, taskList, taskCount);
         } else if (line.toLowerCase().startsWith("todo ")) {
-            return addTask(new Todo(line.substring(5).trim()), taskList, taskCount);
+            return addTask(new Todo(line.substring(TODO_LEN).trim()), taskList, taskCount);
         } else if (line.toLowerCase().startsWith("deadline ")) {
-            return addTask(new Deadline(line.substring(9).trim()), taskList, taskCount);
+            return addTask(new Deadline(line.substring(DEADLINE_LEN).trim()), taskList, taskCount);
         } else if (line.toLowerCase().startsWith("event ")) {
-            return addTask(new Event(line.substring(6).trim()), taskList, taskCount);
+            return addTask(new Event(line.substring(EVENT_LEN).trim()), taskList, taskCount);
         }
         return taskCount;
     }
