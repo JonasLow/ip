@@ -21,34 +21,40 @@ public class Jody {
     private static void runCommand(Scanner input, Task[] taskList) {
         int taskCount = 0;
         while (input.hasNextLine()) {
-            String task = input.nextLine();
-            if (task.equalsIgnoreCase("bye")) {
+            String line = input.nextLine();
+            if (line.equalsIgnoreCase("bye")) {
                 displayShutdown();
                 break;
             }
-            taskCount = processTask(task, taskList, taskCount);
+            taskCount = processTask(line, taskList, taskCount);
         }
     }
 
-    private static int processTask(String task, Task[] taskList, int taskCount) {
-        if (task.equalsIgnoreCase("list")) {
+    private static int processTask(String line, Task[] taskList, int taskCount) {
+        if (line.equalsIgnoreCase("list")) {
             listTasks(taskList, taskCount);
-        } else if (task.toLowerCase().startsWith("mark ")) {
-            markTask(task, taskList, taskCount);
-        } else if (task.toLowerCase().startsWith("unmark ")) {
-            unmarkTask(task, taskList, taskCount);
-        } else {
-            return addTask(task, taskList, taskCount);
+        } else if (line.toLowerCase().startsWith("mark ")) {
+            markTask(line, taskList, taskCount);
+        } else if (line.toLowerCase().startsWith("unmark ")) {
+            unmarkTask(line, taskList, taskCount);
+        } else if (line.toLowerCase().startsWith("todo ")) {
+            return addTask(new Todo(line.substring(5).trim()), taskList, taskCount);
+        } else if (line.toLowerCase().startsWith("deadline ")) {
+            return addTask(new Deadline(line.substring(9).trim()), taskList, taskCount);
+        } else if (line.toLowerCase().startsWith("event ")) {
+            return addTask(new Event(line.substring(6).trim()), taskList, taskCount);
         }
         return taskCount;
     }
 
-    private static int addTask(String task, Task[] taskList, int taskCount) {
-        taskList[taskCount] = new Task(task);
+    private static int addTask(Task task, Task[] taskList, int taskCount) {
+        taskList[taskCount++] = task;
         System.out.println(DIVIDER);
-        System.out.println("    added: " + task);
+        System.out.println("    Got it. I've added this task:");
+        System.out.println("      " + task);
+        System.out.println("    Now you have " + taskCount + " tasks in the list.");
         System.out.println(DIVIDER + "\n");
-        return taskCount + 1;
+        return taskCount;
     }
 
     private static void listTasks(Task[] taskList, int taskCount) {
