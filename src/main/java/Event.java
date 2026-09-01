@@ -10,7 +10,7 @@ public class Event extends Task {
 
     @Override
     public String toString() {
-        return ("[E]" + super.toString() + "\n" + "(" + this.from + this.to + ") \n");
+        return ("[E]" + super.toString() + "(" + this.from + this.to + ")");
     }
 }
 
