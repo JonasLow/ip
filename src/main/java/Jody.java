@@ -1,6 +1,7 @@
 import java.util.Scanner;
 
 public class Jody {
+    public static final int INVALID_INDEX = -1;
     private static final int MAX_TASKS = 100;
     private static final String DIVIDER =
             "    ____________________________________________________________";
@@ -69,38 +70,38 @@ public class Jody {
     private static void markTask(String task, Task[] taskList, int taskCount) {
         System.out.println(DIVIDER);
         int taskIndex = parseTaskNumber(task);
-        if (taskIndex >= 0 && taskIndex < taskCount) {
-            taskList[taskIndex].markAsDone();
-            System.out.println("    Nice! I've marked this task as done:");
-            System.out.println("      " + taskList[taskIndex]);
-        } else {
+        if (taskIndex < 0 || taskIndex >= taskCount) {
             System.out.println("    Unable to mark task.");
+            return;
         }
+        taskList[taskIndex].markAsDone();
+        System.out.println("    Nice! I've marked this task as done:");
+        System.out.println("      " + taskList[taskIndex]);
         System.out.println(DIVIDER + "\n");
     }
 
     private static void unmarkTask(String task, Task[] taskList, int taskCount) {
         System.out.println(DIVIDER);
         int taskIndex = parseTaskNumber(task);
-        if (taskIndex >= 0 && taskIndex < taskCount) {
-            taskList[taskIndex].markAsNotDone();
-            System.out.println("    OK, I've marked this task as not done yet:");
-            System.out.println("      " + taskList[taskIndex]);
-        } else {
-            System.out.println("    Unable to unmark task.");
+        if (taskIndex < 0 || taskIndex >= taskCount) {
+            System.out.println("    Unable to mark task.");
+            return;
         }
+        taskList[taskIndex].markAsNotDone();
+        System.out.println("    OK, I've marked this task as not done yet:");
+        System.out.println("      " + taskList[taskIndex]);
         System.out.println(DIVIDER + "\n");
     }
 
     private static int parseTaskNumber(String task) {
         String[] words = task.split(" ");
         if (words.length != 2) {
-            return -1;
+            return INVALID_INDEX;
         }
         try {
             return Integer.parseInt(words[1]) - 1;
         } catch (NumberFormatException e) {
-            return -1;
+            return INVALID_INDEX;
         }
     }
 
