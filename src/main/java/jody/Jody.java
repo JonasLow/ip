@@ -1,3 +1,4 @@
+package jody;
 import java.util.Scanner;
 
 public class Jody {
