@@ -25,28 +25,56 @@ public class Jody {
     private static void runCommand(Scanner input, Task[] taskList) {
         int taskCount = 0;
         while (input.hasNextLine()) {
-            String line = input.nextLine();
+            String line = input.nextLine().trim();
             if (line.equalsIgnoreCase("bye")) {
                 displayShutdown();
                 break;
             }
-            taskCount = processTask(line, taskList, taskCount);
+            try {
+                taskCount = processTask(line, taskList, taskCount);
+            } catch (JodyException e) {
+                System.out.println(DIVIDER);
+                System.out.println("    Oops! " + e.getMessage());
+                System.out.println(DIVIDER + "\n");
+            }
         }
     }
 
-    private static int processTask(String line, Task[] taskList, int taskCount) {
+    private static int processTask(String line, Task[] taskList, int taskCount) throws JodyException {
         if (line.equalsIgnoreCase("list")) {
             listTasks(taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("mark ")) {
+        } else if (line.toLowerCase().startsWith("mark")) {
+            String description = line.substring("mark".length()).trim();
+            if (description.isEmpty()) {
+                throw new JodyException("Please give your mark a description. Example: mark live till 30");
+            }
             markTask(line, taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("unmark ")) {
+        } else if (line.toLowerCase().startsWith("unmark")) {
+            String description = line.substring("unmark".length()).trim();
+            if (description.isEmpty()) {
+                throw new JodyException("Please give your unmark a description. Example: unmark live till 30");
+            }
             unmarkTask(line, taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("todo ")) {
+        } else if (line.toLowerCase().startsWith("todo")) {
+            String description = line.substring("todo".length()).trim();
+            if (description.isEmpty()) {
+                throw new JodyException("Please give your todo a description. Example: todo read a book");
+            }
             return addTask(new Todo(line.substring(TODO_LEN).trim()), taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("deadline ")) {
+        } else if (line.toLowerCase().startsWith("deadline")) {
+            String description = line.substring("deadline".length()).trim();
+            if (description.isEmpty()) {
+                throw new JodyException("Please give your deadline a description. Example: sacrifice a goat /by Friday 6pm");
+            }
             return addTask(new Deadline(line.substring(DEADLINE_LEN).trim()), taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("event ")) {
+        } else if (line.toLowerCase().startsWith("event")) {
+            String description = line.substring("event".length()).trim();
+            if (description.isEmpty()) {
+                throw new JodyException("Please give your event a description. Example: event rob a bank /from Friday 4pm /to 6pm");
+            }
             return addTask(new Event(line.substring(EVENT_LEN).trim()), taskList, taskCount);
+        } else {
+            throw new JodyException("I don't recognize that command. Try todo, deadline, event, list, mark, unmark, or bye.");
         }
         return taskCount;
     }
