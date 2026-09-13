@@ -10,6 +10,20 @@ public class Event extends Task {
         this.to = "to: " + description.split("/to")[1];
     }
 
+    public Event(String description, String from, String to) {
+        super(description);
+        this.from = from;
+        this.to = to;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public String getTo() {
+        return to;
+    }
+
     @Override
     public String toString() {
         return ("[E]" + super.toString() + "(" + this.from + " " + this.to + ")");

@@ -1,6 +1,8 @@
 package jody;
+
 import java.util.Scanner;
 import java.util.ArrayList;
+import java.nio.file.Path;
 
 public class Jody {
     public static final int INVALID_INDEX = -1;
@@ -17,22 +19,38 @@ public class Jody {
     public static final int EVENT_LEN = 6;
 
     public static void main(String[] args) {
-        displayStartup();
-        ArrayList<Task> taskList = new ArrayList<Task>();
-        Scanner input = new Scanner(System.in);
-        runCommand(input, taskList);
+        Storage storage = new Storage(Path.of("data", "jody.txt"));
+
+        try (Scanner input = new Scanner(System.in)) {
+            ArrayList<Task> taskList = storage.load();
+
+            displayStartup();
+            runCommand(input, taskList, storage);
+        } catch (JodyException e) {
+            System.out.println(DIVIDER);
+            System.out.println("    Oops! " + e.getMessage());
+            System.out.println(DIVIDER + "\n");
+        }
     }
 
-    private static void runCommand(Scanner input, ArrayList<Task> taskList) {
-        int taskCount = 0;
+    private static void runCommand(Scanner input, ArrayList<Task> taskList,
+                                   Storage storage) {
+        int taskCount = taskList.size();
+
         while (input.hasNextLine()) {
             String line = input.nextLine().trim();
+
             if (line.equalsIgnoreCase("bye")) {
                 displayShutdown();
                 break;
             }
+
             try {
                 taskCount = processTask(line, taskList, taskCount);
+
+                if (!line.equalsIgnoreCase("list")) {
+                    storage.save(taskList);
+                }
             } catch (JodyException e) {
                 System.out.println(DIVIDER);
                 System.out.println("    Oops! " + e.getMessage());
