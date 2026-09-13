@@ -15,6 +15,7 @@ public class Jody {
     public static final int TODO_LEN = 5;
     public static final int DEADLINE_LEN = 9;
     public static final int EVENT_LEN = 6;
+    public static final int DELETE_LEN = 7;
 
     public static void main(String[] args) {
         displayStartup();
@@ -74,10 +75,31 @@ public class Jody {
                 throw new JodyException("Please give your event a description. Example: event rob a bank /from Friday 4pm /to 6pm");
             }
             return addTask(new Event(line.substring(EVENT_LEN).trim()), taskList, taskCount);
+        } else if (line.toLowerCase().startsWith("delete")) {
+            deleteTask(line, taskList, taskCount);
+            taskCount--;
         } else {
             throw new JodyException("I don't recognize that command. Try todo, deadline, event, list, mark, unmark, or bye.");
         }
         return taskCount;
+    }
+
+    private static void deleteTask(String line, Task[] taskList, int taskCount)
+            throws JodyException {
+        int taskIndex = parseTaskNumber(line);
+        Task removedTask = taskList[taskIndex];
+
+        for (int i = taskIndex; i < taskCount - 1; i++) {
+            taskList[i] = taskList[i + 1];
+        }
+
+        taskList[taskCount - 1] = null;
+
+        System.out.println(DIVIDER);
+        System.out.println("    Noted. I've removed this task:");
+        System.out.println("      " + removedTask);
+        System.out.println("    Now you have " + (taskCount - 1) + " tasks in the list.");
+        System.out.println(DIVIDER);
     }
 
     private static int addTask(Task task, Task[] taskList, int taskCount) {
