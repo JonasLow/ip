@@ -1,9 +1,9 @@
 package jody;
 import java.util.Scanner;
+import java.util.ArrayList;
 
 public class Jody {
     public static final int INVALID_INDEX = -1;
-    private static final int MAX_TASKS = 100;
     private static final String DIVIDER =
             "    ____________________________________________________________";
     private static final String BANNER = "     _           _       \n"
@@ -18,12 +18,12 @@ public class Jody {
 
     public static void main(String[] args) {
         displayStartup();
-        Task[] taskList = new Task[MAX_TASKS];
+        ArrayList<Task> taskList = new ArrayList<Task>();
         Scanner input = new Scanner(System.in);
         runCommand(input, taskList);
     }
 
-    private static void runCommand(Scanner input, Task[] taskList) {
+    private static void runCommand(Scanner input, ArrayList<Task> taskList) {
         int taskCount = 0;
         while (input.hasNextLine()) {
             String line = input.nextLine().trim();
@@ -41,7 +41,7 @@ public class Jody {
         }
     }
 
-    private static int processTask(String line, Task[] taskList, int taskCount) throws JodyException {
+    private static int processTask(String line, ArrayList<Task> taskList, int taskCount) throws JodyException {
         if (line.equalsIgnoreCase("list")) {
             listTasks(taskList, taskCount);
         } else if (line.toLowerCase().startsWith("mark")) {
@@ -74,14 +74,43 @@ public class Jody {
                 throw new JodyException("Please give your event a description. Example: event rob a bank /from Friday 4pm /to 6pm");
             }
             return addTask(new Event(line.substring(EVENT_LEN).trim()), taskList, taskCount);
+        } else if (line.toLowerCase().startsWith("delete")) {
+            return deleteTask(line, taskList, taskCount);
         } else {
             throw new JodyException("I don't recognize that command. Try todo, deadline, event, list, mark, unmark, or bye.");
         }
         return taskCount;
     }
 
-    private static int addTask(Task task, Task[] taskList, int taskCount) {
-        taskList[taskCount++] = task;
+    private static int deleteTask(String line, ArrayList<Task> taskList, int taskCount)
+            throws JodyException {
+        if (taskList.isEmpty()) {
+            throw new JodyException("Your task list is empty. Add a task first.");
+        }
+
+        int taskIndex = parseTaskNumber(line);
+
+        if (taskIndex < 0 || taskIndex >= taskList.size()) {
+            throw new JodyException(
+                    "Please enter a task number between 1 and "
+                            + taskList.size() + ".");
+        }
+
+        Task removedTask = taskList.remove(taskIndex);
+        taskCount--;
+
+        System.out.println(DIVIDER);
+        System.out.println("    Noted. I've removed this task:");
+        System.out.println("      " + removedTask);
+        System.out.println("    Now you have " + taskCount + " tasks in the list.");
+        System.out.println(DIVIDER);
+        return taskCount;
+    }
+
+    private static int addTask(Task task, ArrayList<Task> taskList, int taskCount) {
+        taskList.add(task);
+        taskCount++;
+
         System.out.println(DIVIDER);
         System.out.println("    Got it. I've added this task:");
         System.out.println("      " + task);
@@ -90,38 +119,38 @@ public class Jody {
         return taskCount;
     }
 
-    private static void listTasks(Task[] taskList, int taskCount) {
+    private static void listTasks(ArrayList<Task> taskList, int taskCount) {
         System.out.println(DIVIDER);
         System.out.println("    Here are the tasks in your list:");
         for (int i = 0; i < taskCount; i++) {
-            System.out.println("    " + (i + 1) + "." + taskList[i]);
+            System.out.println("    " + (i + 1) + "." + taskList.get(i));
         }
         System.out.println(DIVIDER + "\n");
     }
 
-    private static void markTask(String task, Task[] taskList, int taskCount) {
+    private static void markTask(String task, ArrayList<Task> taskList, int taskCount) {
         System.out.println(DIVIDER);
         int taskIndex = parseTaskNumber(task);
         if (taskIndex < 0 || taskIndex >= taskCount) {
             System.out.println("    Unable to mark task.");
             return;
         }
-        taskList[taskIndex].markAsDone();
+        taskList.get(taskIndex).markAsDone();
         System.out.println("    Nice! I've marked this task as done:");
-        System.out.println("      " + taskList[taskIndex]);
+        System.out.println("      " + taskList.get(taskIndex));
         System.out.println(DIVIDER + "\n");
     }
 
-    private static void unmarkTask(String task, Task[] taskList, int taskCount) {
+    private static void unmarkTask(String task, ArrayList<Task> taskList, int taskCount) {
         System.out.println(DIVIDER);
         int taskIndex = parseTaskNumber(task);
         if (taskIndex < 0 || taskIndex >= taskCount) {
             System.out.println("    Unable to mark task.");
             return;
         }
-        taskList[taskIndex].markAsNotDone();
+        taskList.get(taskIndex).markAsNotDone();
         System.out.println("    OK, I've marked this task as not done yet:");
-        System.out.println("      " + taskList[taskIndex]);
+        System.out.println("      " + taskList.get(taskIndex));
         System.out.println(DIVIDER + "\n");
     }
 
