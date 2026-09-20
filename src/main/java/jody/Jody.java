@@ -92,6 +92,10 @@ public class Jody {
                 deleteTask(arguments, taskList);
                 return true;
 
+            case "find":
+                findTask(arguments, taskList);
+                return true;
+
             default:
                 throw new JodyException("I don't recognize that command. "
                         + "Try todo, deadline, event, list, on, "
@@ -118,16 +122,14 @@ public class Jody {
         ui.showAddedTask(task, taskList.size());
     }
 
-    private void deleteTask(String arguments, ArrayList<Task> taskList)
-            throws JodyException {
+    private void deleteTask(String arguments, ArrayList<Task> taskList) throws JodyException {
         int taskIndex = parseTaskNumber(arguments, taskList.size(), "delete");
         Task removedTask = taskList.remove(taskIndex);
 
         ui.showDeletedTask(removedTask, taskList.size());
     }
 
-    private boolean markTask(String arguments, ArrayList<Task> taskList)
-            throws JodyException {
+    private boolean markTask(String arguments, ArrayList<Task> taskList) throws JodyException {
         int taskIndex = parseTaskNumber(arguments, taskList.size(), "mark");
         Task task = taskList.get(taskIndex);
         boolean hasChanged = !task.isDone();
@@ -138,8 +140,7 @@ public class Jody {
         return hasChanged;
     }
 
-    private boolean unmarkTask(String arguments, ArrayList<Task> taskList)
-            throws JodyException {
+    private boolean unmarkTask(String arguments, ArrayList<Task> taskList) throws JodyException {
         int taskIndex = parseTaskNumber(arguments, taskList.size(), "unmark");
         Task task = taskList.get(taskIndex);
         boolean hasChanged = task.isDone();
@@ -150,8 +151,11 @@ public class Jody {
         return hasChanged;
     }
 
-    private int parseTaskNumber(String arguments, int taskCount, String command)
-            throws JodyException {
+    private void findTask(String arguments, ArrayList<Task> taskList) throws JodyException {
+        ui.findInDescription(arguments, taskList);
+    }
+
+    private int parseTaskNumber(String arguments, int taskCount, String command) throws JodyException {
         if (arguments.isBlank()) {
             throw new JodyException("Please enter a task number. Example: " + command + " 1");
         }
@@ -161,20 +165,17 @@ public class Jody {
         try {
             taskNumber = Integer.parseInt(arguments);
         } catch (NumberFormatException e) {
-            throw new JodyException(
-                    "Please enter one whole task number. "
-                            + "Example: " + command + " 1");
+            throw new JodyException("Please enter one whole task number. "
+                    + "Example: " + command + " 1");
         }
 
         if (taskCount == 0) {
-            throw new JodyException(
-                    "Your task list is empty. Add a task first.");
+            throw new JodyException("Your task list is empty. Add a task first.");
         }
 
         if (taskNumber < 1 || taskNumber > taskCount) {
-            throw new JodyException(
-                    "Please enter a task number between 1 and "
-                            + taskCount + ".");
+            throw new JodyException("Please enter a task number between 1 and "
+                    + taskCount + ".");
         }
 
         return taskNumber - 1;

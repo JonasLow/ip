@@ -1,6 +1,8 @@
 package jody;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -65,8 +67,18 @@ public class Ui implements AutoCloseable {
     }
 
     public void showTasks(List<Task> tasks, int taskCount) {
+        showTasks(tasks, taskCount, true);
+    }
+
+    public void showTasks(List<Task> tasks, int taskCount, boolean useDefaultHeader) {
         showLine();
-        System.out.println("    Here are the tasks in your list:");
+
+        if  (useDefaultHeader) {
+            System.out.println("    Here are the tasks in your list:");
+        } else {
+            System.out.println("    Here are the matching tasks in your list:");
+        }
+
         for (int i = 0; i < taskCount; i++) {
             System.out.println("    " + (i + 1) + "." + tasks.get(i));
         }
@@ -111,5 +123,15 @@ public class Ui implements AutoCloseable {
     @Override
     public void close() {
         input.close();
+    }
+
+    public void findInDescription(String description, ArrayList<Task> taskList) {
+        ArrayList<Task> tasks = new ArrayList<>();
+        for (Task task: taskList){
+            if (task.getDescription().contains(description)){
+                tasks.add(task);
+            }
+        }
+        showTasks(tasks, tasks.size(), false);
     }
 }
