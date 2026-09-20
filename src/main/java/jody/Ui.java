@@ -1,5 +1,6 @@
 package jody;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
 
@@ -89,6 +90,22 @@ public class Ui implements AutoCloseable {
     public void showUnableToMark() {
         showLine();
         System.out.println("    Unable to mark task.");
+    }
+
+    public void showTasksOnDate(LocalDate date, List<Task> tasks,
+                                List<Integer> indices) {
+        showLine();
+        System.out.println("    Tasks on " + date + ":");
+
+        if (indices.isEmpty()) {
+            System.out.println("    No deadlines or events on this date.");
+        }
+
+        for (int index : indices) {
+            System.out.println("    " + (index + 1) + "." + tasks.get(index));
+        }
+
+        System.out.println(DIVIDER + "\n");
     }
 
     @Override

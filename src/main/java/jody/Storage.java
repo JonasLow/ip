@@ -90,9 +90,9 @@ public class Storage {
                 + " | " + encode(task.getDescription());
         return switch (task) {
             case Todo todo -> "T" + commonFields;
-            case Deadline deadline -> "D" + commonFields + " | " + encode(deadline.getBy());
-            case Event event -> "E" + commonFields + " | " + encode(event.getFrom())
-                    + " | " + encode(event.getTo());
+            case Deadline deadline -> "D" + commonFields + " | " + encode(String.valueOf(deadline.getBy()));
+            case Event event -> "E" + commonFields + " | " + encode(String.valueOf(event.getFrom()))
+                    + " | " + encode(String.valueOf(event.getTo()));
             default -> throw new JodyException("Cannot save an unsupported task type.");
         };
     }
@@ -120,11 +120,12 @@ public class Storage {
                 break;
             case "D":
                 requireFieldCount(fields, 4);
-                task = new Deadline(fields[2], fields[3]);
+                task = new Deadline(fields[2], fields[3].replaceFirst("(?i)^by: *", ""));
                 break;
             case "E":
                 requireFieldCount(fields, 5);
-                task = new Event(fields[2], fields[3], fields[4]);
+                task = new Event(fields[2], fields[3].replaceFirst("(?i)^from: *", ""),
+                        fields[4].replaceFirst("(?i)^to: *", ""));
                 break;
             default:
                 throw new JodyException("The task type must be T, D or E.");

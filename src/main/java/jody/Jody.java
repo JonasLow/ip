@@ -1,15 +1,13 @@
 package jody;
 
-import java.util.Scanner;
-import java.util.ArrayList;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Locale;
 
 public class Jody {
-    public static final int INVALID_INDEX = -1;
-    public static final int TODO_LEN = 5;
-    public static final int DEADLINE_LEN = 9;
-    public static final int EVENT_LEN = 6;
-
     private final Ui ui = new Ui();
 
     public static void main(String[] args) {
@@ -30,8 +28,6 @@ public class Jody {
     }
 
     private void runCommand(ArrayList<Task> taskList, Storage storage) {
-        int taskCount = taskList.size();
-
         while (ui.hasNextCommand()) {
             String line = ui.readCommand();
 
@@ -41,9 +37,9 @@ public class Jody {
             }
 
             try {
-                taskCount = processTask(line, taskList, taskCount);
+                boolean hasChanged = processTask(line, taskList);
 
-                if (!line.equalsIgnoreCase("list")) {
+                if (hasChanged) {
                     storage.save(taskList);
                 }
             } catch (JodyException e) {
@@ -52,105 +48,168 @@ public class Jody {
         }
     }
 
-    private int processTask(String line, ArrayList<Task> taskList, int taskCount) throws JodyException {
-        if (line.equalsIgnoreCase("list")) {
-            ui.showTasks(taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("mark")) {
-            String description = line.substring("mark".length()).trim();
-            if (description.isEmpty()) {
-                throw new JodyException("Please give your mark a description. Example: mark live till 30");
-            }
-            markTask(line, taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("unmark")) {
-            String description = line.substring("unmark".length()).trim();
-            if (description.isEmpty()) {
-                throw new JodyException("Please give your unmark a description. Example: unmark live till 30");
-            }
-            unmarkTask(line, taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("todo")) {
-            String description = line.substring("todo".length()).trim();
-            if (description.isEmpty()) {
-                throw new JodyException("Please give your todo a description. Example: todo read a book");
-            }
-            return addTask(new Todo(line.substring(TODO_LEN).trim()), taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("deadline")) {
-            String description = line.substring("deadline".length()).trim();
-            if (description.isEmpty()) {
-                throw new JodyException("Please give your deadline a description. Example: sacrifice a goat /by Friday 6pm");
-            }
-            return addTask(new Deadline(line.substring(DEADLINE_LEN).trim()), taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("event")) {
-            String description = line.substring("event".length()).trim();
-            if (description.isEmpty()) {
-                throw new JodyException("Please give your event a description. Example: event rob a bank /from Friday 4pm /to 6pm");
-            }
-            return addTask(new Event(line.substring(EVENT_LEN).trim()), taskList, taskCount);
-        } else if (line.toLowerCase().startsWith("delete")) {
-            return deleteTask(line, taskList, taskCount);
-        } else {
-            throw new JodyException("I don't recognize that command. Try todo, deadline, event, list, mark, unmark, or bye.");
+    private boolean processTask(String line, ArrayList<Task> taskList) throws JodyException {
+        String[] parts = line.split("\\s+", 2);
+        String command = parts[0].toLowerCase(Locale.ROOT);
+        String arguments = parts.length == 2 ? parts[1].trim() : "";
+
+        switch (command) {
+            case "list":
+                requireNoArguments(arguments, "list");
+                ui.showTasks(taskList, taskList.size());
+                return false;
+
+            case "on":
+                showTasksOnDate(arguments, taskList);
+                return false;
+
+            case "todo":
+                requireDescription(arguments, "Please give your todo a description. "
+                        + "Example: todo read a book");
+                addTask(new Todo(arguments), taskList);
+                return true;
+
+            case "deadline":
+                requireDescription(arguments, "Please give your deadline a description and date. "
+                        + "Example: deadline return book /by 2/12/2019 1800");
+                addTask(new Deadline(arguments), taskList);
+                return true;
+
+            case "event":
+                requireDescription(arguments, "Please give your event a description and dates. "
+                        + "Example: event meeting "
+                        + "/from 2/12/2019 1400 /to 2/12/2019 1600");
+                addTask(new Event(arguments), taskList);
+                return true;
+
+            case "mark":
+                return markTask(arguments, taskList);
+
+            case "unmark":
+                return unmarkTask(arguments, taskList);
+
+            case "delete":
+                deleteTask(arguments, taskList);
+                return true;
+
+            default:
+                throw new JodyException("I don't recognize that command. "
+                        + "Try todo, deadline, event, list, on, "
+                        + "mark, unmark, delete, or bye.");
         }
-        return taskCount;
     }
 
-    private int deleteTask(String line, ArrayList<Task> taskList, int taskCount)
+    private void requireDescription(String description, String message)
             throws JodyException {
-        if (taskList.isEmpty()) {
-            throw new JodyException("Your task list is empty. Add a task first.");
+        if (description.isBlank()) {
+            throw new JodyException(message);
+        }
+    }
+
+    private void requireNoArguments(String arguments, String command)
+            throws JodyException {
+        if (!arguments.isEmpty()) {
+            throw new JodyException("The " + command + " command does not take arguments.");
+        }
+    }
+
+    private void addTask(Task task, ArrayList<Task> taskList) {
+        taskList.add(task);
+        ui.showAddedTask(task, taskList.size());
+    }
+
+    private void deleteTask(String arguments, ArrayList<Task> taskList)
+            throws JodyException {
+        int taskIndex = parseTaskNumber(arguments, taskList.size(), "delete");
+        Task removedTask = taskList.remove(taskIndex);
+
+        ui.showDeletedTask(removedTask, taskList.size());
+    }
+
+    private boolean markTask(String arguments, ArrayList<Task> taskList)
+            throws JodyException {
+        int taskIndex = parseTaskNumber(arguments, taskList.size(), "mark");
+        Task task = taskList.get(taskIndex);
+        boolean hasChanged = !task.isDone();
+
+        task.markAsDone();
+        ui.showMarkedTask(task);
+
+        return hasChanged;
+    }
+
+    private boolean unmarkTask(String arguments, ArrayList<Task> taskList)
+            throws JodyException {
+        int taskIndex = parseTaskNumber(arguments, taskList.size(), "unmark");
+        Task task = taskList.get(taskIndex);
+        boolean hasChanged = task.isDone();
+
+        task.markAsNotDone();
+        ui.showUnmarkedTask(task);
+
+        return hasChanged;
+    }
+
+    private int parseTaskNumber(String arguments, int taskCount, String command)
+            throws JodyException {
+        if (arguments.isBlank()) {
+            throw new JodyException("Please enter a task number. Example: " + command + " 1");
         }
 
-        int taskIndex = parseTaskNumber(line);
+        int taskNumber;
 
-        if (taskIndex < 0 || taskIndex >= taskList.size()) {
+        try {
+            taskNumber = Integer.parseInt(arguments);
+        } catch (NumberFormatException e) {
+            throw new JodyException(
+                    "Please enter one whole task number. "
+                            + "Example: " + command + " 1");
+        }
+
+        if (taskCount == 0) {
+            throw new JodyException(
+                    "Your task list is empty. Add a task first.");
+        }
+
+        if (taskNumber < 1 || taskNumber > taskCount) {
             throw new JodyException(
                     "Please enter a task number between 1 and "
-                            + taskList.size() + ".");
+                            + taskCount + ".");
         }
 
-        Task removedTask = taskList.remove(taskIndex);
-        taskCount--;
-
-        ui.showDeletedTask(removedTask, taskCount);
-        return taskCount;
+        return taskNumber - 1;
     }
 
-    private int addTask(Task task, ArrayList<Task> taskList, int taskCount) {
-        taskList.add(task);
-        taskCount++;
+    private void showTasksOnDate(String input, ArrayList<Task> taskList) throws JodyException {
+        LocalDate date = DateTimeParser.parseDate(input);
+        ArrayList<Integer> matches = new ArrayList<>();
 
-        ui.showAddedTask(task, taskCount);
-        return taskCount;
+        for (int i = 0; i < taskList.size(); i++) {
+            Task task = taskList.get(i);
+
+            if (task instanceof Deadline deadline) {
+                if (deadline.getBy().toLocalDate().equals(date)) {
+                    matches.add(i);
+                }
+            } else if (task instanceof Event event) {
+                if (!date.isBefore(event.getFrom().toLocalDate())
+                        && !date.isAfter(event.getTo().toLocalDate())) {
+                    matches.add(i);
+                }
+            }
+        }
+
+        matches.sort(Comparator
+                .comparing(index -> scheduledTime(taskList.get(index))));
+
+        ui.showTasksOnDate(date, taskList, matches);
     }
 
-    private void markTask(String task, ArrayList<Task> taskList, int taskCount) {
-        int taskIndex = parseTaskNumber(task);
-        if (taskIndex < 0 || taskIndex >= taskCount) {
-            ui.showUnableToMark();
-            return;
+    private LocalDateTime scheduledTime(Task task) {
+        if (task instanceof Deadline deadline) {
+            return deadline.getBy();
         }
-        taskList.get(taskIndex).markAsDone();
-        ui.showMarkedTask(taskList.get(taskIndex));
-    }
 
-    private void unmarkTask(String task, ArrayList<Task> taskList, int taskCount) {
-        int taskIndex = parseTaskNumber(task);
-        if (taskIndex < 0 || taskIndex >= taskCount) {
-            ui.showUnableToMark();
-            return;
-        }
-        taskList.get(taskIndex).markAsNotDone();
-        ui.showUnmarkedTask(taskList.get(taskIndex));
-    }
-
-    private static int parseTaskNumber(String task) {
-        String[] words = task.split(" ");
-        if (words.length != 2) {
-            return INVALID_INDEX;
-        }
-        try {
-            return Integer.parseInt(words[1]) - 1;
-        } catch (NumberFormatException e) {
-            return INVALID_INDEX;
-        }
+        return ((Event) task).getFrom();
     }
 }
