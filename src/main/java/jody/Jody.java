@@ -6,42 +6,37 @@ import java.nio.file.Path;
 
 public class Jody {
     public static final int INVALID_INDEX = -1;
-    private static final String DIVIDER =
-            "    ____________________________________________________________";
-    private static final String BANNER = "     _           _       \n"
-            + "    | | ___   __| |_   _ \n"
-            + " _  | |/ _ \\ / _` | | | |\n"
-            + "| |_| | (_) | (_| | |_| |\n"
-            + " \\___/ \\___/ \\__,_|\\__, |\n"
-            + "                   |___/ \n";
     public static final int TODO_LEN = 5;
     public static final int DEADLINE_LEN = 9;
     public static final int EVENT_LEN = 6;
 
+    private final Ui ui = new Ui();
+
     public static void main(String[] args) {
+        new Jody().run();
+    }
+
+    public void run() {
         Storage storage = new Storage(Path.of("data", "jody.txt"));
 
-        try (Scanner input = new Scanner(System.in)) {
+        try (ui) {
             ArrayList<Task> taskList = storage.load();
 
-            displayStartup();
-            runCommand(input, taskList, storage);
+            ui.showWelcome();
+            runCommand(taskList, storage);
         } catch (JodyException e) {
-            System.out.println(DIVIDER);
-            System.out.println("    Oops! " + e.getMessage());
-            System.out.println(DIVIDER + "\n");
+            ui.showError(e.getMessage());
         }
     }
 
-    private static void runCommand(Scanner input, ArrayList<Task> taskList,
-                                   Storage storage) {
+    private void runCommand(ArrayList<Task> taskList, Storage storage) {
         int taskCount = taskList.size();
 
-        while (input.hasNextLine()) {
-            String line = input.nextLine().trim();
+        while (ui.hasNextCommand()) {
+            String line = ui.readCommand();
 
             if (line.equalsIgnoreCase("bye")) {
-                displayShutdown();
+                ui.showGoodbye();
                 break;
             }
 
@@ -52,16 +47,14 @@ public class Jody {
                     storage.save(taskList);
                 }
             } catch (JodyException e) {
-                System.out.println(DIVIDER);
-                System.out.println("    Oops! " + e.getMessage());
-                System.out.println(DIVIDER + "\n");
+                ui.showError(e.getMessage());
             }
         }
     }
 
-    private static int processTask(String line, ArrayList<Task> taskList, int taskCount) throws JodyException {
+    private int processTask(String line, ArrayList<Task> taskList, int taskCount) throws JodyException {
         if (line.equalsIgnoreCase("list")) {
-            listTasks(taskList, taskCount);
+            ui.showTasks(taskList, taskCount);
         } else if (line.toLowerCase().startsWith("mark")) {
             String description = line.substring("mark".length()).trim();
             if (description.isEmpty()) {
@@ -100,7 +93,7 @@ public class Jody {
         return taskCount;
     }
 
-    private static int deleteTask(String line, ArrayList<Task> taskList, int taskCount)
+    private int deleteTask(String line, ArrayList<Task> taskList, int taskCount)
             throws JodyException {
         if (taskList.isEmpty()) {
             throw new JodyException("Your task list is empty. Add a task first.");
@@ -117,59 +110,36 @@ public class Jody {
         Task removedTask = taskList.remove(taskIndex);
         taskCount--;
 
-        System.out.println(DIVIDER);
-        System.out.println("    Noted. I've removed this task:");
-        System.out.println("      " + removedTask);
-        System.out.println("    Now you have " + taskCount + " tasks in the list.");
-        System.out.println(DIVIDER);
+        ui.showDeletedTask(removedTask, taskCount);
         return taskCount;
     }
 
-    private static int addTask(Task task, ArrayList<Task> taskList, int taskCount) {
+    private int addTask(Task task, ArrayList<Task> taskList, int taskCount) {
         taskList.add(task);
         taskCount++;
 
-        System.out.println(DIVIDER);
-        System.out.println("    Got it. I've added this task:");
-        System.out.println("      " + task);
-        System.out.println("    Now you have " + taskCount + " tasks in the list.");
-        System.out.println(DIVIDER + "\n");
+        ui.showAddedTask(task, taskCount);
         return taskCount;
     }
 
-    private static void listTasks(ArrayList<Task> taskList, int taskCount) {
-        System.out.println(DIVIDER);
-        System.out.println("    Here are the tasks in your list:");
-        for (int i = 0; i < taskCount; i++) {
-            System.out.println("    " + (i + 1) + "." + taskList.get(i));
-        }
-        System.out.println(DIVIDER + "\n");
-    }
-
-    private static void markTask(String task, ArrayList<Task> taskList, int taskCount) {
-        System.out.println(DIVIDER);
+    private void markTask(String task, ArrayList<Task> taskList, int taskCount) {
         int taskIndex = parseTaskNumber(task);
         if (taskIndex < 0 || taskIndex >= taskCount) {
-            System.out.println("    Unable to mark task.");
+            ui.showUnableToMark();
             return;
         }
         taskList.get(taskIndex).markAsDone();
-        System.out.println("    Nice! I've marked this task as done:");
-        System.out.println("      " + taskList.get(taskIndex));
-        System.out.println(DIVIDER + "\n");
+        ui.showMarkedTask(taskList.get(taskIndex));
     }
 
-    private static void unmarkTask(String task, ArrayList<Task> taskList, int taskCount) {
-        System.out.println(DIVIDER);
+    private void unmarkTask(String task, ArrayList<Task> taskList, int taskCount) {
         int taskIndex = parseTaskNumber(task);
         if (taskIndex < 0 || taskIndex >= taskCount) {
-            System.out.println("    Unable to mark task.");
+            ui.showUnableToMark();
             return;
         }
         taskList.get(taskIndex).markAsNotDone();
-        System.out.println("    OK, I've marked this task as not done yet:");
-        System.out.println("      " + taskList.get(taskIndex));
-        System.out.println(DIVIDER + "\n");
+        ui.showUnmarkedTask(taskList.get(taskIndex));
     }
 
     private static int parseTaskNumber(String task) {
@@ -182,19 +152,5 @@ public class Jody {
         } catch (NumberFormatException e) {
             return INVALID_INDEX;
         }
-    }
-
-    private static void displayStartup() {
-        System.out.println(DIVIDER);
-        System.out.print(BANNER);
-        System.out.println("    Hello! I'm Jody.");
-        System.out.println("    What can I do for you?");
-        System.out.println(DIVIDER + "\n");
-    }
-
-    private static void displayShutdown() {
-        System.out.println(DIVIDER);
-        System.out.println("    Bye. Hope to see you again soon!");
-        System.out.println(DIVIDER + "\n");
     }
 }
