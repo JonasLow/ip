@@ -2,19 +2,43 @@ package jody;
 
 import java.time.LocalDateTime;
 
+/**
+ * Represents a task spanning a start and end date/time.
+ */
 public class Event extends Task {
     private final LocalDateTime from;
     private final LocalDateTime to;
 
+    /**
+     * Creates an event from arguments containing {@code /from} and {@code /to}.
+     *
+     * @param input the command arguments, excluding the command word
+     * @throws JodyException if the fields are invalid or the end precedes the start
+     */
     public Event(String input) throws JodyException {
         this(splitInput(input));
     }
 
+    /**
+     * Creates an event from separated command fields.
+     *
+     * @param parts the description, start, and end fields, in that order
+     * @throws JodyException if the fields are invalid or the end precedes the start
+     */
     private Event(String[] parts) throws JodyException {
         this(parts[0], parts[1], parts[2]);
     }
 
     // Used when loading a saved task.
+    /**
+     * Creates an event from separate fields, including fields loaded from storage.
+     *
+     * @param description the nonblank task description
+     * @param from the start date/time in a supported format
+     * @param to the end date/time in a supported format
+     * @throws JodyException if the description is blank, a date/time is invalid,
+     *         or the end precedes the start
+     */
     public Event(String description, String from, String to)
             throws JodyException {
         super(description.trim());
@@ -32,6 +56,13 @@ public class Event extends Task {
         }
     }
 
+    /**
+     * Splits event arguments into description, start, and end fields.
+     *
+     * @param input the event command arguments
+     * @return fields separated by {@code /from} and {@code /to}
+     * @throws JodyException if the required separators are missing or repeated
+     */
     private static String[] splitInput(String input) throws JodyException {
         String[] first = input.split("/from", -1);
 
@@ -50,14 +81,29 @@ public class Event extends Task {
                         + "/to 2/12/2019 1600");
     }
 
+    /**
+     * Returns the event's start date and time.
+     *
+     * @return the start date/time
+     */
     public LocalDateTime getFrom() {
         return from;
     }
 
+    /**
+     * Returns the event's end date and time.
+     *
+     * @return the end date/time
+     */
     public LocalDateTime getTo() {
         return to;
     }
 
+    /**
+     * Returns the event's type, status, description, and formatted time range.
+     *
+     * @return the event's display text
+     */
     @Override
     public String toString() {
         return "[E]" + super.toString()

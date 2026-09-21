@@ -8,6 +8,9 @@ import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.Locale;
 
+/**
+ * Parses supported English date/time formats and formats dates for display.
+ */
 public final class DateTimeParser {
     private static final String[] DATE_PATTERNS = {
             "uuuu-MM-dd", "d/M/uuuu", "d MMMM uuuu", "d MMM uuuu"
@@ -20,9 +23,12 @@ public final class DateTimeParser {
     private static final DateTimeFormatter DISPLAY =
             DateTimeFormatter.ofPattern("MMM dd uuuu, h:mm a", Locale.ENGLISH);
 
-    private DateTimeParser() {
-    }
-
+    /**
+     * Removes ordinal suffixes and normalizes whitespace and AM/PM spacing.
+     *
+     * @param input the date or date/time text
+     * @return normalized text for parsing
+     */
     private static String normalize(String input) {
         return input.trim()
                 .replaceAll("(?i)\\b(\\d{1,2})(st|nd|rd|th)\\b", "$1")
@@ -30,6 +36,12 @@ public final class DateTimeParser {
                 .replaceAll("(?i)\\s+(am|pm)\\b", "$1");
     }
 
+    /**
+     * Builds a case-insensitive English formatter with strict date validation.
+     *
+     * @param pattern the date/time pattern
+     * @return the configured formatter
+     */
     private static DateTimeFormatter formatter(String pattern) {
         return new DateTimeFormatterBuilder()
                 .parseCaseInsensitive()
@@ -38,6 +50,14 @@ public final class DateTimeParser {
                 .withResolverStyle(ResolverStyle.STRICT);
     }
 
+    /**
+     * Parses an ISO, day/month/year, or English month-name date.
+     * Ordinal days such as {@code 2nd December 2019} are accepted.
+     *
+     * @param input the date text
+     * @return the parsed date
+     * @throws JodyException if no supported format matches a valid date
+     */
     public static LocalDate parseDate(String input) throws JodyException {
         String value = normalize(input);
 
@@ -53,8 +73,16 @@ public final class DateTimeParser {
                         + "or 2nd December 2019.");
     }
 
-    public static LocalDateTime parseDateTime(String input)
-            throws JodyException {
+    /**
+     * Parses an ISO date/time or a supported date with an optional time.
+     * Times may use compact 24-hour, colon-separated 24-hour, or AM/PM notation.
+     * A date without a time is interpreted as midnight.
+     *
+     * @param input the date/time text
+     * @return the parsed date and time
+     * @throws JodyException if the input is not a valid supported date/time
+     */
+    public static LocalDateTime parseDateTime(String input) throws JodyException {
         String value = normalize(input);
 
         try {
@@ -87,6 +115,12 @@ public final class DateTimeParser {
         }
     }
 
+    /**
+     * Formats a date/time for display, for example {@code Dec 02 2019, 6:00 PM}.
+     *
+     * @param value the date/time to format
+     * @return the formatted English date/time
+     */
     public static String format(LocalDateTime value) {
         return value.format(DISPLAY);
     }

@@ -14,10 +14,22 @@ import java.util.List;
 public class Storage {
     private final Path filePath;
 
+    /**
+     * Creates storage using the supplied task-file path.
+     *
+     * @param filePath the path used to load and save tasks
+     */
     public Storage(Path filePath) {
         this.filePath = filePath;
     }
 
+    /**
+     * Loads UTF-8 task records, skipping blank lines and an initial byte-order mark.
+     * Returns an empty list when the file or its parent directory does not exist.
+     *
+     * @return the tasks in their stored order
+     * @throws JodyException if a record is invalid or the file cannot be read
+     */
     public ArrayList<Task> load() throws JodyException {
         ArrayList<Task> tasks = new ArrayList<>();
         try {
@@ -48,6 +60,14 @@ public class Storage {
         }
     }
 
+    /**
+     * Saves tasks as UTF-8 records through a temporary file in the same directory.
+     * Creates missing parent directories and attempts an atomic replacement,
+     * falling back to a regular replacement when atomic moves are unsupported.
+     *
+     * @param tasks the tasks to save, in their desired order
+     * @throws JodyException if a task type is unsupported or writing fails
+     */
     public void save(List<Task> tasks) throws JodyException {
         List<String> lines = new ArrayList<>();
         for (Task task : tasks) {
@@ -85,6 +105,13 @@ public class Storage {
         }
     }
 
+    /**
+     * Serializes a supported task into a pipe-separated record with escaped fields.
+     *
+     * @param task the todo, deadline, or event to serialize
+     * @return the task record
+     * @throws JodyException if the task type is unsupported
+     */
     private static String toRecord(Task task) throws JodyException {
         String commonFields = " | " + (task.isDone() ? "1" : "0")
                 + " | " + encode(task.getDescription());
@@ -97,6 +124,14 @@ public class Storage {
         };
     }
 
+    /**
+     * Decodes and validates a stored record and restores its completion status.
+     * Also accepts legacy {@code by:}, {@code from:}, and {@code to:} date prefixes.
+     *
+     * @param line the pipe-separated task record
+     * @return the restored task
+     * @throws JodyException if the fields, escapes, type, or dates are invalid
+     */
     private static Task parseRecord(String line) throws JodyException {
         String[] fields = line.split("\\|", -1);
         for (int i = 0; i < fields.length; i++) {
@@ -136,6 +171,13 @@ public class Storage {
         return task;
     }
 
+    /**
+     * Checks that a task record has the required number of fields.
+     *
+     * @param fields the decoded fields, including the task type at index zero
+     * @param expected the required field count
+     * @throws JodyException if the actual count differs from the expected count
+     */
     private static void requireFieldCount(String[] fields, int expected) throws JodyException {
         if (fields.length != expected) {
             throw new JodyException("Task type " + fields[0] + " needs " + expected + " fields.");
@@ -143,6 +185,12 @@ public class Storage {
     }
 
     // Escape reserved characters so a pipe in a description is not a separator.
+    /**
+     * Escapes backslashes, pipes, and line breaks for storage in one record field.
+     *
+     * @param value the unescaped field value
+     * @return the escaped field value
+     */
     private static String encode(String value) {
         return value.replace("\\", "\\\\")
                 .replace("|", "\\p")
@@ -150,6 +198,13 @@ public class Storage {
                 .replace("\r", "\\r");
     }
 
+    /**
+     * Restores escaped backslashes, pipes, and line breaks in a record field.
+     *
+     * @param value the escaped field value
+     * @return the decoded field value
+     * @throws JodyException if an escape sequence is incomplete or unrecognized
+     */
     private static String decode(String value) throws JodyException {
         StringBuilder decoded = new StringBuilder();
         for (int i = 0; i < value.length(); i++) {
